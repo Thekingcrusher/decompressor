@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { XzReadableStream } from 'xz-decompress';
+import lzma from 'lzma-purejs';
 
 export default {
   async fetch(request, env, ctx) {
@@ -17,10 +17,11 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    let fileSourceStream = null;
+    let fileDataBuffer = null;
     let contentType = request.headers.get('content-type') || '';
     let processingPath = urlPath;
 
+    // Fetch or receive file content
     if (request.method === 'GET') {
       if (!targetUrl) {
         return new Response('Missing ?url= parameter.', { status: 400, headers: corsHeaders });
@@ -29,7 +30,7 @@ export default {
         const remoteRes = await fetch(targetUrl);
         if (!remoteRes.ok) throw new Error(`Target returned status ${remoteRes.status}`);
         
-        fileSourceStream = remoteRes.body;
+        fileDataBuffer = await remoteRes.arrayBuffer();
         contentType = remoteRes.headers.get('content-type') || '';
         processingPath = new URL(targetUrl).pathname.toLowerCase();
       } catch (e) {
@@ -40,15 +41,20 @@ export default {
       if (!request.body) {
         return new Response('Empty request body.', { status: 400, headers: corsHeaders });
       }
-      fileSourceStream = request.body;
+      fileDataBuffer = await request.arrayBuffer();
     } else {
       return new Response('Method not allowed.', { status: 405, headers: corsHeaders });
     }
 
     try {
+      const byteArray = new Uint8Array(fileDataBuffer);
+
+      // 1. HANDLE .XZ FILES (Pure JS Engine)
       if (processingPath.endsWith('.xz') || contentType.includes('xz')) {
-        const decompressedStream = new XzReadableStream(fileSourceStream);
-        return new Response(decompressedStream, {
+        // lzma-purejs expects a Uint8Array or Node Buffer
+        const decompressedData = lzma.decompress(byteArray);
+        
+        return new Response(decompressedData, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
@@ -57,12 +63,9 @@ export default {
         });
       }
 
+      // 2. HANDLE .ZIP FILES
       if (processingPath.endsWith('.zip') || contentType.includes('zip')) {
-        const responseData = new Response(fileSourceStream);
-        const arrayBuffer = await responseData.arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
-        
-        const unzipped = unzipSync(buffer);
+        const unzipped = unzipSync(byteArray);
         const subFileKey = Object.keys(unzipped).find(name => 
           name.endsWith('.srt') || name.endsWith('.vtt') || name.endsWith('.ass')
         );
@@ -83,7 +86,8 @@ export default {
         });
       }
 
-      return new Response(fileSourceStream, {
+      // 3. FALLBACK FOR UNCOMPRESSED TEXT
+      return new Response(fileDataBuffer, {
         headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' }
       });
 
