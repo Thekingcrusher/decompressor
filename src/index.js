@@ -1,12 +1,11 @@
 import { unzipSync } from 'fflate';
-import lzma from 'lzma-purejs';
+import { XZDecoder } from 'xz-decoder-js';
 
 export default {
   async fetch(request, env, ctx) {
     const urlObj = new URL(request.url);
     const urlPath = urlObj.pathname.toLowerCase();
     const targetUrl = urlObj.searchParams.get('url');
-
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -17,11 +16,10 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    let fileDataBuffer = null;
+    let fileSourceStream = null;
     let contentType = request.headers.get('content-type') || '';
     let processingPath = urlPath;
 
-    // Fetch or receive file content
     if (request.method === 'GET') {
       if (!targetUrl) {
         return new Response('Missing ?url= parameter.', { status: 400, headers: corsHeaders });
@@ -29,32 +27,27 @@ export default {
       try {
         const remoteRes = await fetch(targetUrl);
         if (!remoteRes.ok) throw new Error(`Target returned status ${remoteRes.status}`);
-        
-        fileDataBuffer = await remoteRes.arrayBuffer();
+        fileSourceStream = remoteRes.body;
         contentType = remoteRes.headers.get('content-type') || '';
         processingPath = new URL(targetUrl).pathname.toLowerCase();
       } catch (e) {
         return new Response(`Failed fetching remote file: ${e.message}`, { status: 502, headers: corsHeaders });
       }
-    } 
-    else if (request.method === 'POST') {
+    } else if (request.method === 'POST') {
       if (!request.body) {
         return new Response('Empty request body.', { status: 400, headers: corsHeaders });
       }
-      fileDataBuffer = await request.arrayBuffer();
+      fileSourceStream = request.body;
     } else {
       return new Response('Method not allowed.', { status: 405, headers: corsHeaders });
     }
 
     try {
-      const byteArray = new Uint8Array(fileDataBuffer);
-
-      // 1. HANDLE .XZ FILES (Pure JS Engine)
       if (processingPath.endsWith('.xz') || contentType.includes('xz')) {
-        // lzma-purejs expects a Uint8Array or Node Buffer
-        const decompressedData = lzma.decompress(byteArray);
-        
-        return new Response(decompressedData, {
+        const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
+        const decoder = new XZDecoder();
+        const decompressed = decoder.decodeBytes(new Uint8Array(arrayBuffer));
+        return new Response(decompressed, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
@@ -63,20 +56,17 @@ export default {
         });
       }
 
-      // 2. HANDLE .ZIP FILES
       if (processingPath.endsWith('.zip') || contentType.includes('zip')) {
-        const unzipped = unzipSync(byteArray);
-        const subFileKey = Object.keys(unzipped).find(name => 
+        const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer);
+        const unzipped = unzipSync(buffer);
+        const subFileKey = Object.keys(unzipped).find(name =>
           name.endsWith('.srt') || name.endsWith('.vtt') || name.endsWith('.ass')
         );
-
         if (!subFileKey) {
           return new Response('No subtitle file found inside ZIP.', { status: 404, headers: corsHeaders });
         }
-
-        const textDecoder = new TextDecoder('utf-8');
-        const subtitleText = textDecoder.decode(unzipped[subFileKey]);
-
+        const subtitleText = new TextDecoder('utf-8').decode(unzipped[subFileKey]);
         return new Response(subtitleText, {
           headers: {
             ...corsHeaders,
@@ -86,8 +76,7 @@ export default {
         });
       }
 
-      // 3. FALLBACK FOR UNCOMPRESSED TEXT
-      return new Response(fileDataBuffer, {
+      return new Response(fileSourceStream, {
         headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' }
       });
 
