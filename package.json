@@ -1,15 +1,9 @@
 {
   "name": "decompressor",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "esbuild src/index.js --bundle --format=esm --outfile=dist/index.js --loader:.wasm=file"
-  },
+  "main": "src/index.js",
   "dependencies": {
     "fflate": "^0.8.2",
-    "xz-decompress": "^0.2.1"
-  },
-  "devDependencies": {
-    "esbuild": "^0.20.0"
+    "lzma-purejs": "^1.0.1"
   }
 }
