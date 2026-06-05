@@ -5,3 +5,7 @@ compatibility_flags = [ "nodejs_compat" ]
 
 [build]
 command = "npx esbuild src/index.js --bundle --format=esm --outdir=dist --loader:.wasm=file"
+
+[observability.logs]
+enabled = true
+invocation_logs = true
