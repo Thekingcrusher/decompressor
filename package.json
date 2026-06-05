@@ -1,0 +1,9 @@
+{
+  "name": "subtitle-decompressor",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "xz-decompress": "^0.2.1"
+  }
+}
