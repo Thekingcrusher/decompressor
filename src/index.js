@@ -1,5 +1,11 @@
 import { unzipSync } from 'fflate';
-import { decompress } from 'lzma-wasm';
+// Import initWasm along with decompress
+import { decompress, initWasm } from 'lzma-wasm';
+
+// Initialize WASM globally outside the fetch handler so it runs once on Worker startup
+const wasmInitPromise = initWasm().catch(err => {
+  console.error("Failed to initialize XZ WebAssembly wrapper:", err);
+});
 
 export default {
   async fetch(request, env, ctx) {
@@ -45,10 +51,13 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
+        // Explicitly await the global WASM initialization before trying to use it
+        await wasmInitPromise;
+
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
 
-        // wasm-lzma performs asynchronous native XZ block parsing 
+        // Decompress via the fully primed WebAssembly instance
         const decompressed = await decompress(bytes);
         
         return new Response(decompressed, {
