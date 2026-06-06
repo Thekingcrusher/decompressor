@@ -1,6 +1,5 @@
 import { unzipSync } from 'fflate';
-// Directly load the pure-JS algorithm engine to bypass Node.js module checks
-import { LZMA } from 'lzma/src/lzma_worker.js'; 
+import lzmaPurejs from 'lzma-purejs';
 
 export default {
   async fetch(request, env, ctx) {
@@ -47,18 +46,17 @@ export default {
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        let bytes = new Uint8Array(arrayBuffer);
-
-        // Standard XZ formats start with magic bytes: 0xFD 0x37 0x7A 0x58 0x5A 0x00
-        // If present, strip the 13-byte XZ container wrapper to get the raw LZMA payload
-        if (bytes[0] === 0xFD && bytes[1] === 0x37 && bytes[2] === 0x7A) {
-          bytes = bytes.subarray(13); 
-        }
-
-        // Synchronous decompression execute loop
-        const decompressedBytes = LZMA.decompress(bytes);
         
-        return new Response(new Uint8Array(decompressedBytes), {
+        // lzma-purejs expects a Node-like Buffer interface. 
+        // We can safely emulate it inside V8 using standard Uint8Array wrapped in Buffer.from
+        const bufferInstance = globalThis.Buffer 
+          ? globalThis.Buffer.from(arrayBuffer) 
+          : new Uint8Array(arrayBuffer);
+
+        // Decompress the full XZ container directly
+        const decompressedBytes = lzmaPurejs.decompressFile(bufferInstance);
+        
+        return new Response(decompressedBytes, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
