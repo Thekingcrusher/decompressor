@@ -4,6 +4,6 @@
   "main": "src/index.js",
   "dependencies": {
     "fflate": "^0.8.2",
-    "f_xz": "^1.0.3"
+    "lzma": "^2.3.2"
   }
 }
