@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { decompress } from 'wasm-lzma';
+import { decompress } from 'lzma-wasm';
 
 export default {
   async fetch(request, env, ctx) {
