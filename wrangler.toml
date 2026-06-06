@@ -7,6 +7,3 @@ compatibility_flags = [ "nodejs_compat" ]
 type = "CompiledWasm"
 globs = ["**/*.wasm"]
 fallthrough = true
-
-[build]
-command = "npx esbuild src/index.js --bundle --format=esm --outdir=dist --loader:.wasm=file"
