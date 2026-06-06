@@ -1,16 +1,9 @@
 {
   "name": "decompressor",
   "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "wrangler dev src/index.js",
-    "deploy": "wrangler deploy src/index.js"
-  },
+  "main": "src/index.js",
   "dependencies": {
-    "any-xz": "^1.0.1",
-    "fflate": "^0.8.2"
-  },
-  "devDependencies": {
-    "wrangler": "^3.109.0"
+    "fflate": "^0.8.2",
+    "xz-decompress": "^0.2.1"
   }
 }
