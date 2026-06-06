@@ -4,6 +4,6 @@
   "main": "src/index.js",
   "dependencies": {
     "fflate": "^0.8.2",
-    "lzma-purejs": "^0.9.3"
+    "wasm-lzma": "^1.1.2"
   }
 }
