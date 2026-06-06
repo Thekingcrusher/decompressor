@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { XZDecoder } from 'xz-decoder-js';
+import { LZMA } from 'lzma';
 
 export default {
   async fetch(request, env, ctx) {
@@ -47,9 +47,8 @@ export default {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
-        const decoder = new XZDecoder();
-        const decompressed = decoder.decodeBytes(bytes);
-        return new Response(decompressed, {
+        const decompressed = LZMA.decompress(bytes);
+        return new Response(Uint8Array.from(decompressed), {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
