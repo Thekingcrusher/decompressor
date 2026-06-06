@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { XZDecoder } from 'xz-decoder-js';
+import { XzReadableStream } from 'xz-decompress';
 
 export default {
   async fetch(request, env, ctx) {
@@ -43,11 +43,14 @@ export default {
     }
 
     try {
-      if (processingPath.endsWith('.xz') || contentType.includes('xz') || (targetUrl && new URL(targetUrl).hostname === 'animetosho.xyz')) {
-        const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        const decoder = new XZDecoder();
-        const decompressed = decoder.decodeBytes(new Uint8Array(arrayBuffer));
-        return new Response(decompressed, {
+      const isXz =
+        processingPath.endsWith('.xz') ||
+        contentType.includes('xz') ||
+        (targetUrl && new URL(targetUrl).hostname === 'animetosho.xyz');
+
+      if (isXz) {
+        const decompressedStream = new XzReadableStream(fileSourceStream);
+        return new Response(decompressedStream, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
