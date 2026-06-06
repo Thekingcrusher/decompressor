@@ -1,11 +1,24 @@
 import { unzipSync } from 'fflate';
-// Import initWasm along with decompress
 import { decompress, initWasm } from 'lzma-wasm';
 
-// Initialize WASM globally outside the fetch handler so it runs once on Worker startup
-const wasmInitPromise = initWasm().catch(err => {
-  console.error("Failed to initialize XZ WebAssembly wrapper:", err);
-});
+// Use a simple tracking flag instead of executing the promise globally
+let isWasmInitialized = false;
+let wasmInitPromise = null;
+
+async function ensureWasmReady() {
+  if (isWasmInitialized) return;
+  
+  // If an initialization is already in progress, await that exact instance
+  if (!wasmInitPromise) {
+    wasmInitPromise = initWasm().then(() => {
+      isWasmInitialized = true;
+    }).catch(err => {
+      wasmInitPromise = null; // Reset flag so it can retry if it was a temporary glitch
+      throw err;
+    });
+  }
+  return wasmInitPromise;
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -51,13 +64,14 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
-        // Explicitly await the global WASM initialization before trying to use it
-        await wasmInitPromise;
+        
+        // Safely trigger initialization inside the execution context of the fetch handler
+        await ensureWasmReady();
 
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
 
-        // Decompress via the fully primed WebAssembly instance
+        // Decompress via the now fully prepared runtime instance
         const decompressed = await decompress(bytes);
         
         return new Response(decompressed, {
