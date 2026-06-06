@@ -1,7 +1,6 @@
 import { unzipSync } from 'fflate';
-// Import the decompressor engine and the raw WASM binary module directly
-import { decompress } from '@moku-labs/lzma-rs';
-import wasmModule from '@moku-labs/lzma-rs/lzma_rs_bg.wasm';
+// Pure WebAssembly infrastructure bundled cleanly without external assets
+import { initLZMA } from '@sec-ant/lzma-js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -50,8 +49,9 @@ export default {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
 
-        // Decompress by feeding both the bytes AND the pre-approved WASM module
-        const decompressed = await decompress(bytes, wasmModule);
+        // Initialize the internal engine instance safely inline
+        const lzma = await initLZMA();
+        const decompressed = lzma.decompress(bytes);
         
         return new Response(decompressed, {
           headers: {
