@@ -1,11 +1,12 @@
 import { unzipSync } from 'fflate';
-import { XzReadableStream } from 'xz-decompress';
+import { XZDecoder } from 'xz-decoder-js';
 
 export default {
   async fetch(request, env, ctx) {
     const urlObj = new URL(request.url);
     const urlPath = urlObj.pathname.toLowerCase();
     const targetUrl = urlObj.searchParams.get('url');
+    const forceFormat = urlObj.searchParams.get('format');
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -43,14 +44,11 @@ export default {
     }
 
     try {
-      const isXz =
-        processingPath.endsWith('.xz') ||
-        contentType.includes('xz') ||
-        (targetUrl && new URL(targetUrl).hostname === 'animetosho.xyz');
-
-      if (isXz) {
-        const decompressedStream = new XzReadableStream(fileSourceStream);
-        return new Response(decompressedStream, {
+      if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
+        const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
+        const decoder = new XZDecoder();
+        const decompressed = decoder.decodeBytes(new Uint8Array(arrayBuffer));
+        return new Response(decompressed, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
@@ -59,7 +57,7 @@ export default {
         });
       }
 
-      if (processingPath.endsWith('.zip') || contentType.includes('zip')) {
+      if (processingPath.endsWith('.zip') || contentType.includes('zip') || forceFormat === 'zip') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const buffer = new Uint8Array(arrayBuffer);
         const unzipped = unzipSync(buffer);
