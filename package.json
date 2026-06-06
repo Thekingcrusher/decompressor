@@ -7,7 +7,7 @@
     "deploy": "wrangler deploy src/index.js"
   },
   "dependencies": {
-    "@sec-ant/lzma-js": "^0.3.0",
+    "any-xz": "^1.0.1",
     "fflate": "^0.8.2"
   },
   "devDependencies": {
