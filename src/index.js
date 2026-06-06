@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { XZDecoder } from 'xz-decoder-js';
+import { decodeXZ } from './xz.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -46,8 +46,7 @@ export default {
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        const decoder = new XZDecoder();
-        const decompressed = decoder.decodeBytes(new Uint8Array(arrayBuffer));
+        const decompressed = decodeXZ(new Uint8Array(arrayBuffer));
         return new Response(decompressed, {
           headers: {
             ...corsHeaders,
@@ -59,8 +58,7 @@ export default {
 
       if (processingPath.endsWith('.zip') || contentType.includes('zip') || forceFormat === 'zip') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
-        const unzipped = unzipSync(buffer);
+        const unzipped = unzipSync(new Uint8Array(arrayBuffer));
         const subFileKey = Object.keys(unzipped).find(name =>
           name.endsWith('.srt') || name.endsWith('.vtt') || name.endsWith('.ass')
         );
