@@ -1,5 +1,6 @@
 import { unzipSync } from 'fflate';
-import { XzReadableStream } from 'xz-decompress';
+import { XzReadableStream } from 'xz-decompress/web';
+import xzWasmModule from 'xz-decompress/xz.wasm';
 
 export default {
   async fetch(request, env, ctx) {
@@ -45,7 +46,12 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
-        const decompressedStream = new XzReadableStream(fileSourceStream);
+        
+        // 3. Explicitly pass the pre-compiled WebAssembly module to the constructor
+        const decompressedStream = new XzReadableStream(fileSourceStream, {
+          wasmModule: xzWasmModule
+        });
+
         return new Response(decompressedStream, {
           headers: {
             ...corsHeaders,
