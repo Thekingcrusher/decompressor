@@ -1,6 +1,5 @@
 import { unzipSync } from 'fflate';
-// Pure WebAssembly infrastructure bundled cleanly without external assets
-import { initLZMA } from '@sec-ant/lzma-js';
+import { decompress } from 'any-xz';
 
 export default {
   async fetch(request, env, ctx) {
@@ -49,9 +48,8 @@ export default {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
 
-        // Initialize the internal engine instance safely inline
-        const lzma = await initLZMA();
-        const decompressed = lzma.decompress(bytes);
+        // Decompress the modern XZ container directly using pure vanilla JS mechanics
+        const decompressed = decompress(bytes);
         
         return new Response(decompressed, {
           headers: {
