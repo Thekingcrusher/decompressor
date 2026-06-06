@@ -1,5 +1,6 @@
 import { unzipSync } from 'fflate';
-import { xzDecompress } from 'f_xz';
+// Directly load the pure-JS algorithm engine to bypass Node.js module checks
+import { LZMA } from 'lzma/src/lzma_worker.js'; 
 
 export default {
   async fetch(request, env, ctx) {
@@ -46,9 +47,18 @@ export default {
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        const decompressed = xzDecompress(bytes);
-        return new Response(decompressed, {
+        let bytes = new Uint8Array(arrayBuffer);
+
+        // Standard XZ formats start with magic bytes: 0xFD 0x37 0x7A 0x58 0x5A 0x00
+        // If present, strip the 13-byte XZ container wrapper to get the raw LZMA payload
+        if (bytes[0] === 0xFD && bytes[1] === 0x37 && bytes[2] === 0x7A) {
+          bytes = bytes.subarray(13); 
+        }
+
+        // Synchronous decompression execute loop
+        const decompressedBytes = LZMA.decompress(bytes);
+        
+        return new Response(new Uint8Array(decompressedBytes), {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
@@ -65,7 +75,7 @@ export default {
           name.endsWith('.srt') || name.endsWith('.vtt') || name.endsWith('.ass')
         );
         if (!subFileKey) {
-          return new Response('No subtitle file found inside ZIP.', { status: 404, headers: headers });
+          return new Response('No subtitle file found inside ZIP.', { status: 404, headers: corsHeaders });
         }
         const subtitleText = new TextDecoder('utf-8').decode(unzipped[subFileKey]);
         return new Response(subtitleText, {
