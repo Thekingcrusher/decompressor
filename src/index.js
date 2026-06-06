@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { LZMA } from 'lzma/src/lzma-d-min.js';
+import { xzDecompress } from 'f_xz';
 
 export default {
   async fetch(request, env, ctx) {
@@ -47,8 +47,8 @@ export default {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
-        const decompressed = LZMA.decompress(bytes);
-        return new Response(Uint8Array.from(decompressed), {
+        const decompressed = xzDecompress(bytes);
+        return new Response(decompressed, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
@@ -65,7 +65,7 @@ export default {
           name.endsWith('.srt') || name.endsWith('.vtt') || name.endsWith('.ass')
         );
         if (!subFileKey) {
-          return new Response('No subtitle file found inside ZIP.', { status: 404, headers: corsHeaders });
+          return new Response('No subtitle file found inside ZIP.', { status: 404, headers: headers });
         }
         const subtitleText = new TextDecoder('utf-8').decode(unzipped[subFileKey]);
         return new Response(subtitleText, {
