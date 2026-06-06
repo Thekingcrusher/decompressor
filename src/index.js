@@ -43,7 +43,7 @@ export default {
     }
 
     try {
-      if (processingPath.endsWith('.xz') || contentType.includes('xz') || processingPath.includes('animetosho.xyz')) {
+      if (processingPath.endsWith('.xz') || contentType.includes('xz') || (targetUrl && new URL(targetUrl).hostname === 'animetosho.xyz')) {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const decoder = new XZDecoder();
         const decompressed = decoder.decodeBytes(new Uint8Array(arrayBuffer));
