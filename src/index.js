@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import lzmaPurejs from 'lzma-purejs';
+import { decompress } from 'wasm-lzma';
 
 export default {
   async fetch(request, env, ctx) {
@@ -46,17 +46,12 @@ export default {
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        
-        // lzma-purejs expects a Node-like Buffer interface. 
-        // We can safely emulate it inside V8 using standard Uint8Array wrapped in Buffer.from
-        const bufferInstance = globalThis.Buffer 
-          ? globalThis.Buffer.from(arrayBuffer) 
-          : new Uint8Array(arrayBuffer);
+        const bytes = new Uint8Array(arrayBuffer);
 
-        // Decompress the full XZ container directly
-        const decompressedBytes = lzmaPurejs.decompressFile(bufferInstance);
+        // wasm-lzma performs asynchronous native XZ block parsing 
+        const decompressed = await decompress(bytes);
         
-        return new Response(decompressedBytes, {
+        return new Response(decompressed, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
