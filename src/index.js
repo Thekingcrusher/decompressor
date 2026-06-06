@@ -46,8 +46,9 @@ export default {
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
         const decoder = new XZDecoder();
-        const decompressed = decoder.decodeBytes(new Uint8Array(arrayBuffer));
+        const decompressed = decoder.decodeBytes(bytes);
         return new Response(decompressed, {
           headers: {
             ...corsHeaders,
