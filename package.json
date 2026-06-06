@@ -4,6 +4,6 @@
   "main": "src/index.js",
   "dependencies": {
     "fflate": "^0.8.2",
-    "xz-decompress": "^0.2.1"
+    "xz-decoder-js": "^1.0.2"
   }
 }
