@@ -1,24 +1,7 @@
 import { unzipSync } from 'fflate';
-import { decompress, initWasm } from 'lzma-wasm';
-
-// Use a simple tracking flag instead of executing the promise globally
-let isWasmInitialized = false;
-let wasmInitPromise = null;
-
-async function ensureWasmReady() {
-  if (isWasmInitialized) return;
-  
-  // If an initialization is already in progress, await that exact instance
-  if (!wasmInitPromise) {
-    wasmInitPromise = initWasm().then(() => {
-      isWasmInitialized = true;
-    }).catch(err => {
-      wasmInitPromise = null; // Reset flag so it can retry if it was a temporary glitch
-      throw err;
-    });
-  }
-  return wasmInitPromise;
-}
+// Import the decompressor engine and the raw WASM binary module directly
+import { decompress } from '@moku-labs/lzma-rs';
+import wasmModule from '@moku-labs/lzma-rs/lzma_rs_bg.wasm';
 
 export default {
   async fetch(request, env, ctx) {
@@ -64,15 +47,11 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
-        
-        // Safely trigger initialization inside the execution context of the fetch handler
-        await ensureWasmReady();
-
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
 
-        // Decompress via the now fully prepared runtime instance
-        const decompressed = await decompress(bytes);
+        // Decompress by feeding both the bytes AND the pre-approved WASM module
+        const decompressed = await decompress(bytes, wasmModule);
         
         return new Response(decompressed, {
           headers: {
