@@ -1,9 +1,16 @@
 {
   "name": "decompressor",
   "version": "1.0.0",
-  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev src/index.js",
+    "deploy": "wrangler deploy src/index.js"
+  },
   "dependencies": {
-    "fflate": "^0.8.2",
-    "lzma-wasm": "^1.0.7"
+    "@sec-ant/lzma-js": "^0.3.0",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "wrangler": "^3.109.0"
   }
 }
