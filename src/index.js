@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { LZMA } from 'lzma';
+import { LZMA } from 'lzma/src/lzma-d-min.js';
 
 export default {
   async fetch(request, env, ctx) {
