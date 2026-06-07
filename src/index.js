@@ -1,6 +1,6 @@
 import { unzipSync } from 'fflate';
-import { XzReadableStream } from 'xz-decompress/web';
-import xzWasmModule from 'xz-decompress/xz.wasm';
+import { XzDecompressor } from 'xz-compat';
+import { Readable } from 'node:stream';
 
 export default {
   async fetch(request, env, ctx) {
@@ -47,12 +47,19 @@ export default {
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         
-        // 3. Explicitly pass the pre-compiled WebAssembly module to the constructor
-        const decompressedStream = new XzReadableStream(fileSourceStream, {
-          wasmModule: xzWasmModule
-        });
+        // 1. Convert Cloudflare's Web ReadableStream into a Node.js Readable stream
+        const nodeReadable = Readable.fromWeb(fileSourceStream);
 
-        return new Response(decompressedStream, {
+        // 2. Instantiate the pure JS XZ decompressor
+        const decompressor = new XzDecompressor();
+
+        // 3. Pipe the incoming data through the decompressor
+        const nodeDecompressedStream = nodeReadable.pipe(decompressor);
+
+        // 4. Convert the Node.js stream back into a Web ReadableStream for the Cloudflare Response
+        const webDecompressedStream = Readable.toWeb(nodeDecompressedStream);
+
+        return new Response(webDecompressedStream, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
