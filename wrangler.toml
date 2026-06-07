@@ -2,3 +2,7 @@ name = "decompressor"
 main = "src/index.js"
 compatibility_date = "2026-06-07"
 compatibility_flags = ["nodejs_compat"]
+
+[observability.logs]
+enabled = true
+invocation_logs = true
