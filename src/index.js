@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { XZDecoder } from 'xz-decoder-js';
+import { XZDecoder } from './xz-decoder.js';
 
 export default {
   async fetch(request, env, ctx) {
