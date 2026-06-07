@@ -7,7 +7,6 @@ compatibility_flags = ["nodejs_compat"]
 command = ""
 
 [rules]
-[[rules]]
 type = "CompiledWasm"
 globs = ["**/*.wasm"]
 fallthrough = true
