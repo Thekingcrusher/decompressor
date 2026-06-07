@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "dependencies": {
-    "fflate": "^0.8.2",
-    "xz-decoder-js": "^1.1.0"
+    "fflate": "^0.8.2"
   }
 }
