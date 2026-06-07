@@ -1,7 +1,5 @@
 import { unzipSync } from 'fflate';
-import pako from 'pako';
-import { decompressXZ } from './xz-decompress.js';
-import xzWasm from './xz.wasm';
+import { XZDecoder } from 'xz-decoder-js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -48,11 +46,9 @@ export default {
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
-        const decompressed = await decompressXZ(buffer, xzWasm);
-        const subtitleText = new TextDecoder('utf-8').decode(decompressed);
-
-        return new Response(subtitleText, {
+        const decoder = new XZDecoder();
+        const decompressed = decoder.decodeBytes(new Uint8Array(arrayBuffer));
+        return new Response(decompressed, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
@@ -61,22 +57,7 @@ export default {
         });
       }
 
-      if (processingPath.endsWith('.gz') || contentType.includes('gzip') || forceFormat === 'gzip') {
-        const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
-        const decompressed = pako.inflate(buffer);
-        const subtitleText = new TextDecoder('utf-8').decode(decompressed);
-
-        return new Response(subtitleText, {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Disposition': 'inline; filename="subtitle.srt"'
-          }
-        });
-      }
-
-      if (processingPath.endsWith('.zip') || contentType.includes('zip')) {
+      if (processingPath.endsWith('.zip') || contentType.includes('zip') || forceFormat === 'zip') {
         const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
         const buffer = new Uint8Array(arrayBuffer);
         const unzipped = unzipSync(buffer);
