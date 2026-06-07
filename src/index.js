@@ -1,6 +1,6 @@
 import { unzipSync } from 'fflate';
 import { XzReadableStream } from 'xz-decompress';
-import xzWasmModule from 'xz-decompress/dist/xz.wasm';
+import xzWasmModule from './xz.wasm';
 
 export default {
   async fetch(request, env, ctx) {
