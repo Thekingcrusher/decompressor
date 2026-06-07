@@ -1,5 +1,7 @@
 import { unzipSync } from 'fflate';
-import { XzReadableStream } from 'xz-decompress';
+import pako from 'pako';
+import { decompressXZ } from './xz-decompress.js';
+import xzWasm from './xz.wasm';
 
 export default {
   async fetch(request, env, ctx) {
@@ -45,9 +47,27 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
-        const decompressedStream = new XzReadableStream(fileSourceStream);
+        const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer);
+        const decompressed = await decompressXZ(buffer, xzWasm);
+        const subtitleText = new TextDecoder('utf-8').decode(decompressed);
 
-        return new Response(decompressedStream, {
+        return new Response(subtitleText, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': 'inline; filename="subtitle.srt"'
+          }
+        });
+      }
+
+      if (processingPath.endsWith('.gz') || contentType.includes('gzip') || forceFormat === 'gzip') {
+        const arrayBuffer = await new Response(fileSourceStream).arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer);
+        const decompressed = pako.inflate(buffer);
+        const subtitleText = new TextDecoder('utf-8').decode(decompressed);
+
+        return new Response(subtitleText, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
