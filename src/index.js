@@ -1,9 +1,5 @@
 import { unzipSync } from 'fflate';
-import { XzReadableStream } from 'xz-decompress/dist/esm/XzReadableStream.js';
-import initXzSpace from 'xz-decompress/dist/esm/index.js';
-import xzWasmModule from './xz.wasm';
-
-const xzInstance = initXzSpace(xzWasmModule);
+import { XzReadableStream } from 'xz-decompress';
 
 export default {
   async fetch(request, env, ctx) {
@@ -49,9 +45,7 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
-        
-        // 5. Pass the raw file source stream alongside our statically bundled xzInstance
-        const decompressedStream = new XzReadableStream(fileSourceStream, xzInstance);
+        const decompressedStream = new XzReadableStream(fileSourceStream);
 
         return new Response(decompressedStream, {
           headers: {
