@@ -78,6 +78,18 @@ class InputMemoryStream {
       : (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
   }
 
+  readUint64() {
+    if (this.byteOrder === ByteOrder.BIG_ENDIAN) {
+      const high = this.readUint32();
+      const low = this.readUint32();
+      return high * 0x100000000 + low;
+    } else {
+      const low = this.readUint32();
+      const high = this.readUint32();
+      return high * 0x100000000 + low;
+    }
+  }
+
   readBytes(count) {
     const s = this.subset({ position: this._position, length: count });
     this._position += s.length;
