@@ -1,6 +1,9 @@
 {
   "name": "decompressor",
+  "version": "1.0.0",
   "main": "src/index.js",
-  "compatibility_date": "2024-04-01",
-  "compatibility_flags": ["nodejs_compat"]
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "xz-compat": "^1.2.7"
+  }
 }
