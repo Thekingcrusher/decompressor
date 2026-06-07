@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { XzDecompressor } from 'xz-compat';
+import XzDecompressor from 'xz-compat';
 import { Readable } from 'node:stream';
 
 export default {
