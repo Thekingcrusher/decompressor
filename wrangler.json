@@ -5,10 +5,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "rules": [
     { "type": "CompiledWasm", "globs": ["**/*.wasm"], "fallthrough": true }
-  ]
+  ],
   "observability": {
     "logs": {
-      "enabled": false,
+      "enabled": true,
       "invocation_logs": true
     }
   }
