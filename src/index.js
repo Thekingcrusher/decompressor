@@ -1,6 +1,6 @@
 import { unzipSync } from 'fflate';
-import * as xz from 'xz-compat';
-import { Readable } from 'node:stream';
+import { XzReadableStream } from 'xz-decompress';
+import xzWasmModule from 'xz-decompress/xz.wasm';
 
 export default {
   async fetch(request, env, ctx) {
@@ -46,11 +46,11 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
-        const nodeReadable = Readable.fromWeb(fileSourceStream);
-        const decompressor = new xz.XzDecompressor();
-        const nodeDecompressedStream = nodeReadable.pipe(decompressor);
-        const webDecompressedStream = Readable.toWeb(nodeDecompressedStream);
-        return new Response(webDecompressedStream, {
+        const decompressedStream = new XzReadableStream(fileSourceStream, {
+          wasmModule: xzWasmModule
+        });
+
+        return new Response(decompressedStream, {
           headers: {
             ...corsHeaders,
             'Content-Type': 'text/plain; charset=utf-8',
