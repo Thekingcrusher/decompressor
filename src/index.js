@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import XzDecompressor from 'xz-compat';
+import * as xz from 'xz-compat';
 import { Readable } from 'node:stream';
 
 export default {
@@ -46,19 +46,10 @@ export default {
 
     try {
       if (processingPath.endsWith('.xz') || contentType.includes('xz') || forceFormat === 'xz') {
-        
-        // 1. Convert Cloudflare's Web ReadableStream into a Node.js Readable stream
         const nodeReadable = Readable.fromWeb(fileSourceStream);
-
-        // 2. Instantiate the pure JS XZ decompressor
-        const decompressor = new XzDecompressor();
-
-        // 3. Pipe the incoming data through the decompressor
+        const decompressor = new xz.XzDecompressor();
         const nodeDecompressedStream = nodeReadable.pipe(decompressor);
-
-        // 4. Convert the Node.js stream back into a Web ReadableStream for the Cloudflare Response
         const webDecompressedStream = Readable.toWeb(nodeDecompressedStream);
-
         return new Response(webDecompressedStream, {
           headers: {
             ...corsHeaders,
