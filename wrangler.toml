@@ -3,14 +3,6 @@ main = "src/index.js"
 compatibility_date = "2026-06-07"
 compatibility_flags = ["nodejs_compat"]
 
-[build]
-command = ""
-
-[[rules]]
-type = "CompiledWasm"
-globs = ["**/*.wasm"]
-fallthrough = true
-
 [observability.logs]
 enabled = true
 invocation_logs = true
